@@ -19,7 +19,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Search & Pagination
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [page, setPage] = useState(1);
@@ -61,10 +60,7 @@ function App() {
       setLoading(true);
       setError(null);
       try {
-        // Nếu filter all, phân trang backend, nếu active/completed thì lấy tất cả
-        const fetchLimit = filter === "all" ? limit : 1000;
-        const fetchPage = filter === "all" ? page : 1;
-        const data = await apiGetTodos(fetchPage, fetchLimit, search);
+        const data = await apiGetTodos(1, 1000, search); // luôn lấy hết, phân trang FE
         setTodos(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Fetch todos error:", err);
@@ -75,7 +71,7 @@ function App() {
     };
 
     fetchTodos();
-  }, [isLoggedIn, page, search, filter]);
+  }, [isLoggedIn, search]);
 
   // ---- LOGOUT ----
   const logout = async () => {
@@ -89,7 +85,7 @@ function App() {
 
   if (!isLoggedIn) return <AuthForm onLoginSuccess={() => setIsLoggedIn(true)} />;
 
-  // ---- HANDLER FUNCTIONS ----
+  // ---- HANDLERS ----
   const handleAddTodo = async (text) => {
     try {
       const newTodo = await apiAddTodo(text);
@@ -139,11 +135,13 @@ function App() {
     return true;
   });
 
-  // ---- PAGINATION LOGIC ----
+  // ---- PHÂN TRANG CHO CẢ 3 FILTER ----
   const totalPages = Math.ceil(filteredTodos.length / limit);
-  const currentTodos = filteredTodos.slice((page - 1) * limit, page * limit);
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const currentTodos = filteredTodos.slice(start, end);
 
-  // ---- RENDER TODO APP ----
+  // ---- RENDER ----
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-900">
       {/* Dark Mode + Logout */}
@@ -160,7 +158,6 @@ function App() {
         <Header />
         {error && <p className="text-red-500 mb-2">{error}</p>}
 
-        {/* Search Input */}
         <input
           type="text"
           placeholder="Search todos..."
@@ -203,7 +200,7 @@ function App() {
           </button>
         </div>
 
-        {/* Filter & Clear Completed */}
+        {/* Filter + Clear */}
         <div className="flex justify-between items-center mt-4">
           <div className="flex gap-2">
             {["all", "active", "completed"].map((f) => (
@@ -228,10 +225,7 @@ function App() {
             <p className="text-gray-600 dark:text-gray-300">
               {todos.filter((t) => !t.isCompleted).length} tasks left
             </p>
-            <button
-              onClick={handleClearCompleted}
-              className="text-sm text-red-500 hover:underline"
-            >
+            <button onClick={handleClearCompleted} className="text-sm text-red-500 hover:underline">
               Clear Completed
             </button>
           </div>
